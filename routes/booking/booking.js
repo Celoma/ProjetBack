@@ -15,33 +15,50 @@ const schema = z.object({
 
 async function checkRules(startTime, endTime, salleId){
    const room = await prisma.salle.findUnique({
-    where: { id: salleId },
+    where: { id: salleId}
    });
+
+   const existingBooking = await prisma.reservation.findFirst({
+        where: {
+            salleId: salleId,
+            OR: [
+                { startTime: { lt: new Date(endTime) }, endTime: { gt: new Date(startTime) } }
+            ]
+        }
+    });
+
+    if (existingBooking) {
+        return "La salle est déjà occupéee"; // Room is already booked
+    }
 
     if ("maxDurationMinutes" in room.rules) {
         const startDate = new Date(startTime);
         const endDate = new Date(endTime);
         const duration = (endDate - startDate) / (1000 * 60); // Duration in minutes
         if (duration > room.rules.maxDurationMinutes) {
-            return false;
+            return "La durée de réservation est trop longue"; // Room is already booked
         }
-    } else if ("allowWeekends" in room.rules) {
-        const startDate = new Date(startTime);
-        const endDate = new Date(endTime);
-        const startDay = startDate.getDay();
-        const endDay = endDate.getDay();
-        if (startDay === 0 || endDay === 0 || startDay === 6 || endDay === 6) {
-            return false;
+    } 
+    if ("allowWeekends" in room.rules) {
+        if (!room.rules.allowWeekends) {
+            const startDate = new Date(startTime);
+            const endDate = new Date(endTime);
+            const startDay = startDate.getDay();
+            const endDay = endDate.getDay();
+            if (startDay === 0 || endDay === 0 || startDay === 6 || endDay === 6) {
+                return "Impossible de réservé un weekend"; // Room is already booked
+            }
         }
-    } else if ("minAdvanceHours" in room.rules) {
+    } 
+    if ("minAdvanceHours" in room.rules) {
         const now = new Date();
         const advanceTime = new Date(startTime);
         advanceTime.setHours(advanceTime.getHours() - room.rules.minAdvanceHours);
         if (now > advanceTime) {
-            return false;
+            return "Vous ne pouvez pas réservé moins de 3h avant le début de la réservation"; // Room is already booked
         }
     }
-    return true;
+    return "Ok"; // Room is available
 }
 
 router.get('/bookings', checkaccess("employee"), async (req, res) => {
@@ -86,8 +103,10 @@ router.get('/bookings', checkaccess("employee"), async (req, res) => {
 
 router.post('/bookings', checkaccess("employee"), zodValidator(schema), async (req, res) => {
         const {startTime, endTime, salleId} = req.body;
-        if (!checkRules(startTime, endTime, salleId)) {
-            return res.status(403).json({ message: "Cette réservation ne respecte pas les règles de la salle." });
+        await checkRules(startTime, endTime, salleId);
+        const rulesCorrect = await (checkRules(startTime, endTime, salleId))
+        if (rulesCorrect !== "Ok") {
+            return res.status(400).json({ message: rulesCorrect });
         }
 
         const jwtToken = req.cookies["jwtToken"];

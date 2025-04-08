@@ -4,6 +4,14 @@ const router = express.Router();
 const prisma = new PrismaClient();
 import checkaccess from '../../authMiddleware.js';
 import jwt from 'jsonwebtoken';
+import { z } from "zod"
+import zodValidator from '../../middleware/zodValdidator.js';
+
+const schema = z.object({
+    startTime: z.string().datetime(),
+    endTime: z.string().datetime(),
+    salleId: z.number().int().positive() 
+});
 
 async function checkRules(startTime, endTime, salleId){
    const room = await prisma.salle.findUnique({
@@ -76,7 +84,7 @@ router.get('/bookings', checkaccess("employee"), async (req, res) => {
 
 });
 
-router.post('/bookings', checkaccess("employee"), async (req, res) => {
+router.post('/bookings', checkaccess("employee"), zodValidator(schema), async (req, res) => {
         const {startTime, endTime, salleId} = req.body;
         if (!checkRules(startTime, endTime, salleId)) {
             return res.status(403).json({ message: "Cette réservation ne respecte pas les règles de la salle." });

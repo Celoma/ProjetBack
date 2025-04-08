@@ -1,8 +1,17 @@
 import { PrismaClient } from '@prisma/client';
 import express from 'express';
 import checkaccess from '../../authMiddleware.js';
+import { z } from "zod";
+import zodValidator from '../../middleware/zodValdidator.js';
+
 const router = express.Router();
 const prisma = new PrismaClient();
+
+const schema = z.object({
+    name: z.string().nonempty(), 
+    capacity: z.number().int().positive(), 
+    equipments: z.array(z.string().nonempty()) 
+});
 
 router.get('/rooms', async (req, res) => {
     const rooms = await prisma.salle.findMany();
@@ -21,7 +30,7 @@ router.get('/rooms/:id', async (req, res) => {
     }
 });
 
-router.post('/rooms', checkaccess("admin"), async (req, res) => {
+router.post('/rooms', checkaccess("admin"), zodValidator(schema), async (req, res) => {
     const { name, capacity, equipments } = req.body;
     const newRoom = await prisma.salle.create({
         data: {

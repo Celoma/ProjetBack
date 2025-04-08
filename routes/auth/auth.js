@@ -4,9 +4,23 @@ import jwt from "jsonwebtoken";
 const router = express.Router();
 import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
+import { z } from "zod"
+import zodValidator from "../../middleware/zodValdidator.js";
 
 
-router.post("/auth/login", async (req, res) => {
+const schemaRegister = z.object({
+    email: z.string().nonempty(),    
+    name: z.string().nonempty(),
+    password: z.string().nonempty()
+});
+
+const schemaLogin = z.object({
+    email: z.string().nonempty(),    
+    password: z.string().nonempty()
+});
+
+
+router.post("/auth/login", zodValidator(schemaLogin) , async (req, res) => {
     const { email, password } = req.body;
 
     const user = await prisma.user.findUnique({
@@ -30,7 +44,7 @@ router.post("/auth/login", async (req, res) => {
 });
 
 
-router.post("/auth/register", async (req, res) => {
+router.post("/auth/register", zodValidator(schemaRegister) ,async (req, res) => {
     try {
         //Créer un nouvel utilisateur
         const { email, password, name } = req.body;

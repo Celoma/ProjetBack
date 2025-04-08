@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import express from 'express';
-
+import checkaccess from '../../authMiddleware.js';
 const router = express.Router();
 const prisma = new PrismaClient();
 
@@ -21,7 +21,7 @@ router.get('/rooms/:id', async (req, res) => {
     }
 });
 
-router.post('/rooms', async (req, res) => {
+router.post('/rooms', checkaccess("admin"), async (req, res) => {
     const { name, capacity, equipments } = req.body;
     const newRoom = await prisma.salle.create({
         data: {
@@ -32,4 +32,6 @@ router.post('/rooms', async (req, res) => {
     });
     res.status(201).json(newRoom);
 });
+
+router 
 export default router;

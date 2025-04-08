@@ -3,7 +3,7 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 // Vérifie le profil de l'utilisateur et les profils autorisés
-function checkaccess(chemins) {
+function checkaccess(roles) {
     return async (req, res, next) => {
         // Récupérer l'ID de l'utilisateur à partir du token
         const jwtToken = req.cookies["jwtToken"];
@@ -11,14 +11,13 @@ function checkaccess(chemins) {
             if (err) {
                 return res.status(401).json({ message: "Non autorisé ici" });
             }
-            if (roles == "employee") {
+            if (roles === "employee") {
                 next();
             } else if (roles == "admin") {
-            const user = decoded.user;
-
+            const idUser = decoded.userId;
             const role = await prisma.user.findFirst({
                 where: {
-                    idUser: user.id,
+                    id: idUser,
                 }
             });
 

@@ -57,3 +57,6 @@ docker-compose up --build
 ### 5️⃣ Accéder à l'application
 - 🌐 L'application sera accessible sur http://localhost:3000.
 - 🗄️ La base de données sera disponible sur le port spécifié dans le fichier docker-compose.yaml (par défaut: 5555)
+
+Projet présenté par :
+Matéo BOUVIER, Clément Salouet, Jacky LE PRÉ, Yanis GÂCHOT

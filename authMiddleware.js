@@ -15,19 +15,18 @@ function checkaccess(roles) {
                 next();
             } else if (roles == "admin") {
             const idUser = decoded.userId;
-            const role = await prisma.user.findFirst({
+            const user = await prisma.user.findFirst({
                 where: {
                     id: idUser,
                 }
             });
 
-            if (!role || role != "admin") {
+            if (!user.roles || user.roles != "admin") {
                 return res.status(403).json({ message: "Accès refusé" });
-                }
             } else {
                 return res.status(403).json({ message: "Erreur dans les accès veuillez contacter un admin" });
             }
-            next();
+            }
         });
     };
 }

@@ -128,4 +128,61 @@ router.post('/bookings', checkaccess("employee"), zodValidator(schema), async (r
     }
 );
 
+
+router.get('/rooms/:id/availability', async (req, res) => {
+    const { id } = req.params; // Récupérer l'ID de la salle
+    const { date } = req.query; // Récupérer la date à partir des paramètres de la requête
+
+    try {
+        // Vérifier que la date est valide
+        if (!date) {
+            return res.status(400).json({ message: "Veuillez fournir une date valide (YYYY-MM-DD)." });
+        }
+
+        const startOfDay = new Date(`${date}T00:00:00.000Z`); // Début de la journée
+        const endOfDay = new Date(`${date}T23:59:59.999Z`); // Fin de la journée
+
+        // Récupérer les réservations existantes pour la salle et la journée spécifiée
+        const existingBookings = await prisma.reservation.findMany({
+            where: {
+                salleId: parseInt(id),
+                startTime: { lte: endOfDay },
+                endTime: { gte: startOfDay },
+            },
+            select: { startTime: true, endTime: true }, // Sélectionner uniquement les créneaux
+        });
+
+        // Définir les heures d'ouverture par défaut (par exemple 08h00 - 18h00)
+        const openingTime = new Date(`${date}T08:00:00.000Z`);
+        const closingTime = new Date(`${date}T18:00:00.000Z`);
+
+        // Générer les créneaux disponibles
+        const availableSlots = [];
+        let currentTime = openingTime;
+
+        // Boucle pour analyser les créneaux disponibles entre les réservations
+        while (currentTime < closingTime) {
+            const nextBooking = existingBookings.find(
+                (booking) => new Date(booking.startTime) > currentTime
+            );
+
+            const nextTime = nextBooking ? new Date(nextBooking.startTime) : closingTime;
+
+            if (currentTime < nextTime) {
+                availableSlots.push({
+                    start: currentTime,
+                    end: nextTime,
+                });
+            }
+
+            currentTime = nextBooking ? new Date(nextBooking.endTime) : closingTime;
+        }
+
+        res.json({ date, availableSlots });
+    } catch (error) {
+        console.error("Erreur lors de la récupération des créneaux disponibles :", error);
+        res.status(500).json({ message: "Erreur interne du serveur." });
+    }
+});
+
 export default router;

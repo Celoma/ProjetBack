@@ -59,4 +59,4 @@ docker-compose up --build
 - 🗄️ La base de données sera disponible sur le port spécifié dans le fichier docker-compose.yaml (par défaut: 5555)
 
 Projet présenté par :
-Matéo BOUVIER, Clément Salouet, Jacky LE PRÉ, Yanis GÂCHOT
+Matéo BOUVIER, Clément Salouet, Jacky LE PRÉ, Yanis GÂCHOT 

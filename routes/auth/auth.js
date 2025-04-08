@@ -9,17 +9,17 @@ import zodValidator from "../../middleware/zodValdidator.js";
 
 
 const schemaRegister = z.object({
-    email: z.string().nonempty(),    
+    email: z.string().nonempty(),
     name: z.string().nonempty(),
     password: z.string().nonempty()
 });
 
 const schemaLogin = z.object({
-    email: z.string().nonempty(),    
+    email: z.string().nonempty(),
     password: z.string().nonempty()
 });
 
-
+//Se connecter
 router.post("/auth/login", zodValidator(schemaLogin) , async (req, res) => {
     const { email, password } = req.body;
 
@@ -43,12 +43,10 @@ router.post("/auth/login", zodValidator(schemaLogin) , async (req, res) => {
     }
 });
 
-
+//Créer un nouvel utilisateur
 router.post("/auth/register", zodValidator(schemaRegister) ,async (req, res) => {
     try {
-        //Créer un nouvel utilisateur
         const { email, password, name } = req.body;
-    
         const hashPassword = async (password) => {
             const saltRounds = 10;
             return await bcrypt.hash(password, saltRounds)
@@ -65,7 +63,7 @@ router.post("/auth/register", zodValidator(schemaRegister) ,async (req, res) => 
         })
     } catch (error) {
         console.error("Erreur lors de l'inscription", error);
-        res.status(401).json({ message: "Erreur lors de l'inscription" });
+        res.status(401).json({ message: "Erreur lors de l'inscription" , error: error.message });
     }
 });
 

@@ -13,6 +13,7 @@ const schema = z.object({
     salleId: z.number().int().positive() 
 });
 
+//Vérifier les rules
 async function checkRules(startTime, endTime, salleId){
    const room = await prisma.salle.findUnique({
     where: { id: salleId}
@@ -28,15 +29,17 @@ async function checkRules(startTime, endTime, salleId){
     });
 
     if (existingBooking) {
-        return "La salle est déjà occupéee"; // Room is already booked
+        return "La salle est déjà occupéee";
     }
-
+    if(room.rules === null){
+        return "Ok";
+    }
     if ("maxDurationMinutes" in room.rules) {
         const startDate = new Date(startTime);
         const endDate = new Date(endTime);
-        const duration = (endDate - startDate) / (1000 * 60); // Duration in minutes
+        const duration = (endDate - startDate) / (1000 * 60);
         if (duration > room.rules.maxDurationMinutes) {
-            return "La durée de réservation est trop longue"; // Room is already booked
+            return "La durée de réservation est trop longue";
         }
     } 
     if ("allowWeekends" in room.rules) {
@@ -46,7 +49,7 @@ async function checkRules(startTime, endTime, salleId){
             const startDay = startDate.getDay();
             const endDay = endDate.getDay();
             if (startDay === 0 || endDay === 0 || startDay === 6 || endDay === 6) {
-                return "Impossible de réservé un weekend"; // Room is already booked
+                return "Impossible de réservé un weekend";
             }
         }
     } 
@@ -55,12 +58,13 @@ async function checkRules(startTime, endTime, salleId){
         const advanceTime = new Date(startTime);
         advanceTime.setHours(advanceTime.getHours() - room.rules.minAdvanceHours);
         if (now > advanceTime) {
-            return "Vous ne pouvez pas réservé moins de 3h avant le début de la réservation"; // Room is already booked
+            return "Vous ne pouvez pas réservé moins de 3h avant le début de la réservation";
         }
     }
-    return "Ok"; // Room is available
+    return "Ok";
 }
 
+//Deux implémentations pour obtenir -> Employée que ses résas / Admin toutes les résas
 router.get('/bookings', checkaccess("employee"), async (req, res) => {
     const jwtToken = req.cookies["jwtToken"];
     jwt.verify(jwtToken, process.env.JWT_SECRET, async (err, decoded) => {
@@ -101,6 +105,7 @@ router.get('/bookings', checkaccess("employee"), async (req, res) => {
 
 });
 
+//Crée une résa
 router.post('/bookings', checkaccess("employee"), zodValidator(schema), async (req, res) => {
         const {startTime, endTime, salleId} = req.body;
         await checkRules(startTime, endTime, salleId);
@@ -128,13 +133,12 @@ router.post('/bookings', checkaccess("employee"), zodValidator(schema), async (r
     }
 );
 
-
+//Avaibilité d'une salle
 router.get('/rooms/:id/availability', async (req, res) => {
-    const { id } = req.params; // Récupérer l'ID de la salle
-    const { date } = req.query; // Récupérer la date à partir des paramètres de la requête
+    const { id } = req.params;
+    const { date } = req.query;
 
     try {
-        // Vérifier que la date est valide
         if (!date) {
             return res.status(400).json({ message: "Veuillez fournir une date valide (YYYY-MM-DD)." });
         }
@@ -142,25 +146,22 @@ router.get('/rooms/:id/availability', async (req, res) => {
         const startOfDay = new Date(`${date}T00:00:00.000Z`); // Début de la journée
         const endOfDay = new Date(`${date}T23:59:59.999Z`); // Fin de la journée
 
-        // Récupérer les réservations existantes pour la salle et la journée spécifiée
         const existingBookings = await prisma.reservation.findMany({
             where: {
                 salleId: parseInt(id),
                 startTime: { lte: endOfDay },
                 endTime: { gte: startOfDay },
             },
-            select: { startTime: true, endTime: true }, // Sélectionner uniquement les créneaux
+            select: { startTime: true, endTime: true },
         });
 
         // Définir les heures d'ouverture par défaut (par exemple 08h00 - 18h00)
         const openingTime = new Date(`${date}T08:00:00.000Z`);
         const closingTime = new Date(`${date}T18:00:00.000Z`);
 
-        // Générer les créneaux disponibles
         const availableSlots = [];
         let currentTime = openingTime;
 
-        // Boucle pour analyser les créneaux disponibles entre les réservations
         while (currentTime < closingTime) {
             const nextBooking = existingBookings.find(
                 (booking) => new Date(booking.startTime) > currentTime

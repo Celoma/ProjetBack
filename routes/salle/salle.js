@@ -10,14 +10,21 @@ const prisma = new PrismaClient();
 const schema = z.object({
     name: z.string().nonempty(), 
     capacity: z.number().int().positive(), 
-    equipments: z.array(z.string().nonempty()) 
+    equipments: z.array(z.string().nonempty()),
+    rules: z.object({
+        maxDurationMinutes: z.number().int().positive().optional(),
+        allowWeekends: z.boolean().optional(),
+        minAdvanceHours: z.number().int().positive().optional(),
+    }).optional()
 });
 
+//Get toutes les rooms
 router.get('/rooms', async (req, res) => {
     const rooms = await prisma.salle.findMany();
     res.json(rooms);
 });
 
+//Get une room
 router.get('/rooms/:id', async (req, res) => {
     const { id } = req.params;
     const salle = await prisma.salle.findUnique({
@@ -30,6 +37,7 @@ router.get('/rooms/:id', async (req, res) => {
     }
 });
 
+//Créer une room
 router.post('/rooms', checkaccess("admin"), zodValidator(schema), async (req, res) => {
     const { name, capacity, equipments } = req.body;
     const newRoom = await prisma.salle.create({
@@ -37,6 +45,11 @@ router.post('/rooms', checkaccess("admin"), zodValidator(schema), async (req, re
             name,
             capacity,
             equipments,
+            rules: {
+                maxDurationMinutes: 120,
+                allowWeekends: false,
+                minAdvanceHours: 3,
+            },
         },
     });
     res.status(201).json(newRoom);

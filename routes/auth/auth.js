@@ -1,11 +1,11 @@
-import express from 'express';
-import jwt from 'jsonwebtoken';
-import { PrismaClient } from '@prisma/client';
-import bcrypt from 'bcryptjs';
-
-
+import express from "express";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 const router = express.Router();
+import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
+
+
 router.post("/auth/login", async (req, res) => {
     const { email, password } = req.body;
 
@@ -16,7 +16,6 @@ router.post("/auth/login", async (req, res) => {
     const verifyPassword = async (password, hash) => {
         return await bcrypt.compare(password, hash);
     }
-
     const verifiedPassword = await verifyPassword(password, user.password)
 
     if (user && verifiedPassword) {
@@ -32,31 +31,28 @@ router.post("/auth/login", async (req, res) => {
 
 
 router.post("/auth/register", async (req, res) => {
-    const { email, password, firstname, lastname, birthdate } = req.body;
-
-    const hashPassword = async (password) => {
-        const saltRounds = 10;
-        return await bcrypt.hash(password, saltRounds)
-    }
-
-    const hashedPassword = await hashPassword(password)
-    const birthdateISO = new Date(birthdate).toISOString();
-
-    const newUser = await prisma.user.create ({
-        data : {
-            email,
-            firstname,
-            lastname,
-            password: hashedPassword,
-            birthdate: birthdateISO,
-            profiles: {
-                create: {
-                  profile: { connect: { id:  2} },
-                },
-            },
+    try {
+        //Créer un nouvel utilisateur
+        const { email, password, name } = req.body;
+    
+        const hashPassword = async (password) => {
+            const saltRounds = 10;
+            return await bcrypt.hash(password, saltRounds)
         }
-    })
-    res.status(201).json(newUser);
+        const hashedPassword = await hashPassword(password)
+
+        const newUser = await prisma.user.create ({
+            data : {
+                email,
+                name,
+                roles : "employee",
+                password: hashedPassword,
+            }
+        })
+    } catch (error) {
+        console.error("Erreur lors de l'inscription", error);
+        res.status(401).json({ message: "Erreur lors de l'inscription" });
+    }
 });
 
 export default router;

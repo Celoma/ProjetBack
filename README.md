@@ -34,11 +34,6 @@ npm i
 
 ### 3. Configurer les variables d'environnement
 Créez un fichier .env à la racine du projet et ajoutez-y les variables d'environnement nécessaires.
-```bash
-DATABASE_URL="postgresql://postgres:postgres@db/app?schema=public"
-JWT_SECRET=""
-```
-*JWT_SECRET --> génération de token JWT --> https://jwtsecret.com/generate
 
 ### 4. Lancer les services Docker
 Le projet utilise une base de données via Docker, démarrez-les avec Docker Compose :
@@ -46,11 +41,6 @@ Le projet utilise une base de données via Docker, démarrez-les avec Docker Com
 docker-compose up --build
 ```
 
-### 5. Lancer le serveur
-```bash
-npm run dev
-```
-
-### 6. Accéder à l'application
+### 5. Accéder à l'application
 - L'application sera accessible sur http://localhost:3000.
 - La base de données sera disponible sur le port spécifié dans le fichier docker-compose.yaml (par défaut: 5555)

@@ -6,7 +6,7 @@ import checkaccess from '../../authMiddleware.js';
 import jwt from 'jsonwebtoken';
 
 
-router.get('/booking', async (req, res) => {
+router.get('/booking', checkaccess("employee"), async (req, res) => {
     const jwtToken = req.cookies["jwtToken"];
     jwt.verify(jwtToken, process.env.JWT_SECRET, async (err, decoded) => {
         if (err) {
@@ -18,8 +18,16 @@ router.get('/booking', async (req, res) => {
                 id: idUser,
             }
         });
+        console.log(user.roles);
         if (user.roles === "admin") {
-            const bookings = await prisma.reservation.findMany();
+            const bookings = await prisma.reservation.findMany(
+                {
+                    include: {
+                        salle: true,
+                        user: true,
+                    },
+                }
+            );
             return res.json(bookings);
         } else {
             const bookings = await prisma.reservation.findMany(

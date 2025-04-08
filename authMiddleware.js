@@ -20,12 +20,10 @@ function checkaccess(roles) {
                     id: idUser,
                 }
             });
-
             if (!user.roles || user.roles != "admin") {
                 return res.status(403).json({ message: "Accès refusé" });
-            } else {
-                return res.status(403).json({ message: "Erreur dans les accès veuillez contacter un admin" });
-            }
+                }
+            next();
             }
         });
     };
